@@ -1,0 +1,4 @@
+Flask
+google-cloud-storage==2.1.0
+google~=3.0.0
+packaging~=21.3
