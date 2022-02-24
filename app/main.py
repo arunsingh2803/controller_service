@@ -2,7 +2,10 @@ from flask import Flask, request
 import os
 from google.cloud import storage
 from packaging import version
+import threading
 app = Flask(__name__)
+
+locking_dict = {}
 
 
 @app.route("/go_ahead")
@@ -10,11 +13,23 @@ def check_status():
     appname = request.args.get('appname')
     schema_version = request.args.get('version')
     path_to_file = appname + "_check_version.pid"
+    lock = get_lock_for_app(appname)
+    lock.acquire()
     if os.path.exists(path_to_file):
+        lock.release()
         return "wait"
     else:
         status = check_version_run_schema_change(schema_version, path_to_file)
+        lock.release()
         return status
+
+
+def get_lock_for_app(appname):
+    if appname in locking_dict.keys():
+        return locking_dict[appname]
+    else:
+        locking_dict[appname] = threading.Lock()
+        return locking_dict[appname]
 
 
 def check_version_run_schema_change(schema_version, path_to_file):
@@ -58,6 +73,8 @@ def unlock_depl():
     job_status = request.args.get('job_status')
     deploying_version = request.args.get('deploying_version')
     path_to_file = appname + "_check_version.pid"
+    lock = get_lock_for_app(appname)
+    lock.acquire()
     if job_status == "Success":
         with open('running_version.txt', "w") as file:
             file.write(deploying_version)
@@ -65,8 +82,9 @@ def unlock_depl():
         delete_pid_file(path_to_file)
     elif job_status == "Failed":
         delete_pid_file(path_to_file)
+    lock.release()
     return "Done"
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0')
