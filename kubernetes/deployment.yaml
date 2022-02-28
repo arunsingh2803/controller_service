@@ -7,18 +7,21 @@ spec:
     app: hello-python
   ports:
   - protocol: "TCP"
-    port: 6000
+    port: 80
     targetPort: 5000
-  type: LoadBalancer
+  type: ClusterIP
 
 
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-python
 spec:
-  replicas: 4
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-python
   template:
     metadata:
       labels:
@@ -26,7 +29,10 @@ spec:
     spec:
       containers:
       - name: hello-python
-        image: hello-python:latest
+        image: us.gcr.io/dc-hughes-poc/controller_new:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 5000
+      serviceAccountName: svc-test-init-container
+      nodeSelector:
+        iam.gke.io/gke-metadata-server-enabled: "true"

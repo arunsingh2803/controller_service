@@ -45,15 +45,15 @@ def check_version_run_schema_change(schema_version, path_to_file):
 
 
 def download_file_from_gcs():
-    storage_client = storage.Client("dc-hughes-poc-gke")
-    bucket = storage_client.get_bucket("version_check_bucket_echostar")
+    storage_client = storage.Client("dc-hughes-poc")
+    bucket = storage_client.get_bucket("version_check_echostar_bucket")
     blob = bucket.blob("running_version.txt")
     blob.download_to_filename("running_version.txt")
 
 
 def upload_file_to_gcs():
-    storage_client = storage.Client("dc-hughes-poc-gke")
-    bucket = storage_client.get_bucket("version_check_bucket_echostar")
+    storage_client = storage.Client("dc-hughes-poc")
+    bucket = storage_client.get_bucket("version_check_echostar_bucket")
     blob = bucket.blob("running_version.txt")
     blob.upload_from_filename("running_version.txt")
 
@@ -81,6 +81,8 @@ def unlock_depl():
         upload_file_to_gcs()
         delete_pid_file(path_to_file)
     elif job_status == "Failed":
+        delete_pid_file(path_to_file)
+    elif job_status == "norun":
         delete_pid_file(path_to_file)
     lock.release()
     return "Done"
